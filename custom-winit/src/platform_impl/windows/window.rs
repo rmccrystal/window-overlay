@@ -784,30 +784,28 @@ unsafe fn init<T: 'static>(
     let dpi = hwnd_dpi(real_window.0);
     let scale_factor = dpi_to_scale_factor(dpi);
 
-    if let None = pl_attribs.hwnd_callback {
-        // Register for touch events if applicable
-        {
-            let digitizer = winuser::GetSystemMetrics(winuser::SM_DIGITIZER) as u32;
-            if digitizer & winuser::NID_READY != 0 {
-                winuser::RegisterTouchWindow(real_window.0, winuser::TWF_WANTPALM);
-            }
+    // Register for touch events if applicable
+    {
+        let digitizer = winuser::GetSystemMetrics(winuser::SM_DIGITIZER) as u32;
+        if digitizer & winuser::NID_READY != 0 {
+            winuser::RegisterTouchWindow(real_window.0, winuser::TWF_WANTPALM);
         }
+    }
 
-        // making the window transparent
-        if attributes.transparent && !pl_attribs.no_redirection_bitmap {
-            // Empty region for the blur effect, so the window is fully transparent
-            let region = CreateRectRgn(0, 0, -1, -1);
+    // making the window transparent
+    if attributes.transparent && !pl_attribs.no_redirection_bitmap {
+        // Empty region for the blur effect, so the window is fully transparent
+        let region = CreateRectRgn(0, 0, -1, -1);
 
-            let bb = dwmapi::DWM_BLURBEHIND {
-                dwFlags: dwmapi::DWM_BB_ENABLE | dwmapi::DWM_BB_BLURREGION,
-                fEnable: 1,
-                hRgnBlur: region,
-                fTransitionOnMaximized: 0,
-            };
+        let bb = dwmapi::DWM_BLURBEHIND {
+            dwFlags: dwmapi::DWM_BB_ENABLE | dwmapi::DWM_BB_BLURREGION,
+            fEnable: 1,
+            hRgnBlur: region,
+            fTransitionOnMaximized: 0,
+        };
 
-            dwmapi::DwmEnableBlurBehindWindow(real_window.0, &bb);
-            DeleteObject(region as _);
-        }
+        dwmapi::DwmEnableBlurBehindWindow(real_window.0, &bb);
+        DeleteObject(region as _);
     }
 
     // If the system theme is dark, we need to set the window theme now
@@ -824,10 +822,11 @@ unsafe fn init<T: 'static>(
             pl_attribs.preferred_theme,
         );
         let window_state = Arc::new(Mutex::new(window_state));
+
+        WindowState::set_window_flags(window_state.lock(), real_window.0, |f| *f = window_flags);
+
         if let Some(callback) = pl_attribs.hwnd_callback {
             callback(real_window.0);
-        } else {
-            WindowState::set_window_flags(window_state.lock(), real_window.0, |f| *f = window_flags);
         }
         window_state
     };
@@ -841,13 +840,13 @@ unsafe fn init<T: 'static>(
     let dimensions = attributes
         .inner_size
         .unwrap_or_else(|| PhysicalSize::new(800, 600).into());
-    win.set_inner_size(dimensions);
+    // win.set_inner_size(dimensions);
     if attributes.maximized {
         // Need to set MAXIMIZED after setting `inner_size` as
         // `Window::set_inner_size` changes MAXIMIZED to false.
         win.set_maximized(true);
     }
-    win.set_visible(attributes.visible);
+    // win.set_visible(attributes.visible);
 
     if let Some(_) = attributes.fullscreen {
         win.set_fullscreen(attributes.fullscreen);

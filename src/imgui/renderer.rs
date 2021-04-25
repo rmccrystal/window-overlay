@@ -40,8 +40,10 @@ impl Imgui {
 
         let hidpi_factor = platform.hidpi_factor();
 
-        imgui.io_mut().font_global_scale = (1.0 / hidpi_factor) as f32;
-        let fonts = add_fonts(&mut imgui);
+        dbg!(hidpi_factor);
+
+        // imgui.io_mut().font_global_scale = (hidpi_factor) as f32;
+        let fonts = add_fonts(&mut imgui, 1.0);
         let renderer = Renderer::init(&mut imgui, &display).expect("Unable to create imgui renderer");
 
         Self {
@@ -88,8 +90,9 @@ impl Imgui {
 
                 let gl_window = display.gl_window();
                 let mut target = display.draw();
-                target.clear_color_srgb(1.0, 1.0, 1.0, 0.0);
-                // target.clear_all((0.0, 0.0, 0.0, 0.0), 0.0, 0);
+                // target.clear_color_srgb(1.0, 1.0, 1.0, 0.0);
+                target.clear_all((0.0, 0.0, 0.0, 0.0), 0.0, 0);
+                // target.clear_color(0.0, 0.0, 0.0, 0.0);
                 platform.prepare_render(&ui, gl_window.window());
                 let draw_data = ui.render();
                 renderer

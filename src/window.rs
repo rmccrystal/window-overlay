@@ -68,7 +68,7 @@ impl Window {
     }
 
     fn from_window_builder(window_builder: winit::window::WindowBuilder) -> Result<Self> {
-        // let window_builder = window_builder.with_hwnd_callback(Self::init_overlay);
+        let window_builder = window_builder.with_hwnd_callback(Self::init_overlay);
 
         let event_loop = EventLoop::new_any_thread();
 
@@ -82,9 +82,12 @@ impl Window {
 
     /// Modifies the HWND to be an overlay
     unsafe fn init_overlay(hwnd: HWND) {
-        SetWindowLongA(hwnd, GWL_STYLE, (WS_CLIPSIBLINGS | WS_POPUP | WS_VISIBLE | WS_THICKFRAME) as _);
+        println!("init");
+        // SetWindowLongA(hwnd, GWL_STYLE, (WS_CLIPSIBLINGS | WS_POPUP | WS_VISIBLE) as _);
+        SetWindowLongA(hwnd, GWL_STYLE, (WS_CLIPSIBLINGS | WS_POPUP | WS_VISIBLE) as _);
         // Default Nvidia flags: EX_LAYERED, EX_NOACTIVE, EX_TOOLWINDOW
-        SetWindowLongA(hwnd, GWL_EXSTYLE, (WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOOLWINDOW) as _);
+        SetWindowLongA(hwnd, GWL_EXSTYLE, (WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW) as _);
+        // SetWindowLongA(hwnd, GWL_EXSTYLE, (WS_EX_ACCEPTFILES | WS_EX_APPWINDOW | WS_EX_TRANSPARENT | WS_EX_WINDOWEDGE) as _);
 
         // Remove border
         DwmExtendFrameIntoClientArea(hwnd, &MARGINS {
