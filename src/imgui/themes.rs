@@ -2,7 +2,7 @@ use imgui::{FontSource, FontConfig};
 use imgui::sys::*;
 
 pub fn main_theme(imgui: &mut imgui::Context) {
-    imguionts().add_font(&[
+    imgui.fonts().add_font(&[
         FontSource::TtfData {
             data: include_bytes!("../fonts/Ruda-Bold.ttf"),
             size_pixels: 15.0,
@@ -15,7 +15,7 @@ pub fn main_theme(imgui: &mut imgui::Context) {
     ]);
 
     let style = imgui.style_mut();
-    style.stylerame_rounding = 4.0;
+    style.frame_rounding = 4.0;
     style.grab_rounding = 4.0;
     style.alpha = 1.0;
 }
