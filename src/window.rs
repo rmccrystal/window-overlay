@@ -18,13 +18,13 @@ const HIJACK_WINDOWS: &[(&str, &str)] = &[
     ("CEF-OSC-WIDGET", "NVIDIA GeForce Overlay")
 ];
 
-pub struct Window {
+pub struct OverlayWindow {
     pub event_loop: EventLoop<()>,
     pub display: glium::Display,
     pub controller: WindowController,
 }
 
-impl Window {
+impl OverlayWindow {
     /// Hijacks a Window or creates one if there are no windows available to hijack
     pub fn new() -> Result<Self> {
         match Self::find_hijack() {
@@ -72,7 +72,7 @@ impl Window {
 
         let event_loop = EventLoop::new_any_thread();
 
-        let builder = glutin::ContextBuilder::new().with_vsync(true);
+        let builder = glutin::ContextBuilder::new();
         let windowed_context = builder.build_windowed(window_builder, &event_loop)?;
         let hwnd = windowed_context.window().hwnd() as HWND;
         let display = Display::from_gl_window(windowed_context)?;

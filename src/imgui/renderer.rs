@@ -4,24 +4,26 @@ use super::fonts::add_fonts;
 use winit::event_loop::EventLoop;
 use imgui_glium_renderer::Renderer;
 use imgui::{Context, Ui, FontSource, FontConfig};
-use std::time::Instant;
+use std::time::{Instant, Duration};
 use glutin::event::{Event, WindowEvent};
 use glium::Surface;
 use glutin::event_loop::ControlFlow;
 use crate::window::WindowController;
+use std::marker::PhantomData;
 
-pub struct Imgui {
+pub struct Imgui<T: Default + 'static> {
     pub event_loop: EventLoop<()>,
     pub display: glium::Display,
     pub imgui: Context,
     pub platform: WinitPlatform,
     pub renderer: Renderer,
     pub controller: WindowController,
+    state_type: PhantomData<T>,
 }
 
-impl Imgui {
-    pub fn new(window: window::Window, mut imgui: imgui::Context) -> Self {
-        let window::Window { event_loop, controller, display } = window;
+impl<T: Default + 'static> Imgui<T> {
+    pub fn new(window: window::OverlayWindow, mut imgui: imgui::Context) -> Self {
+        let window::OverlayWindow { event_loop, controller, display } = window;
 
         imgui.set_ini_filename(None);
 
@@ -53,21 +55,28 @@ impl Imgui {
             platform,
             renderer,
             controller,
+            state_type: PhantomData,
         }
     }
 
-    pub fn run(self, mut run_ui: impl FnMut(&mut Ui, &mut RenderContext) + 'static) -> ! {
+    /// Runs the ui with a state that gets inited with Default
+    pub fn run(self, mut run_ui: impl FnMut(&mut Ui, &mut T, &mut RenderContext) + 'static) -> ! {
         let Imgui {
             event_loop,
             display,
             mut imgui,
             mut platform,
             mut renderer,
-            mut controller
+            mut controller,
+            ..
         } = self;
 
-        let mut render_context = RenderContext{ui_open: true, bypass_screenshots: true};
+        let mut render_context = RenderContext { ui_open: true, bypass_screenshots: true };
         let mut render_context_init = false;
+        let mut fade_start = None;
+        let fade_time = Duration::from_millis(1000);
+
+        let mut state = T::default();
 
         let mut last_frame = Instant::now();
 
@@ -87,11 +96,14 @@ impl Imgui {
             Event::RedrawRequested(_) => {
                 controller.update();
 
+                // imgui.style_mut().alpha = fade_animation(&fade_start, fade_time, render_context.ui_open);
+
                 let mut ui = imgui.frame();
 
                 let old_render_context = render_context.clone();
-                run_ui(&mut ui, &mut render_context);
+                run_ui(&mut ui, &mut state, &mut render_context);
                 if old_render_context.ui_open != render_context.ui_open || !render_context_init {
+                    fade_start = Some(Instant::now());
                     controller.clickthrough(!render_context.ui_open);
                 }
                 if old_render_context.bypass_screenshots != render_context.bypass_screenshots || !render_context_init {
@@ -105,7 +117,9 @@ impl Imgui {
                 target.clear_all((0.0, 0.0, 0.0, 0.0), 0.0, 0);
                 // target.clear_color(0.0, 0.0, 0.0, 0.0);
                 platform.prepare_render(&ui, gl_window.window());
+
                 let draw_data = ui.render();
+
                 renderer
                     .render(&mut target, draw_data)
                     .expect("Rendering failed");
@@ -127,5 +141,27 @@ impl Imgui {
 #[derive(Default, Clone, Eq, PartialEq)]
 pub struct RenderContext {
     pub bypass_screenshots: bool,
-    pub ui_open: bool
+    pub ui_open: bool,
+}
+
+// Animation for fading in a window. Returns a f32 from 0.0 to 1.0 of the alpha the window should be
+fn fade_animation(fade_start: &Option<Instant>, fade_time: Duration, ui_open: bool) -> f32 {
+    // Fade in window
+    let alpha = match fade_start {
+        Some(start) => {
+            let elapsed = start.elapsed();
+            if elapsed > fade_time {
+                if ui_open { 1.0 } else { 0.0 }
+            } else {
+                let mut alpha = elapsed.as_secs_f32() / fade_time.as_secs_f32();
+                if ui_open {
+                    alpha = 1.0 - alpha;
+                }
+                alpha
+            }
+        }
+        None => if ui_open { 1.0 } else { 0.0 }
+    };
+
+    f32::clamp(alpha, 0.0, 1.0)
 }

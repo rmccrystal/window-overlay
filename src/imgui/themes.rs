@@ -6,18 +6,38 @@ pub fn main_theme(imgui: &mut imgui::Context) {
         FontSource::TtfData {
             data: include_bytes!("../fonts/Ruda-Bold.ttf"),
             size_pixels: 15.0,
-            config: Some({
-                let mut cfg = FontConfig::default();
-                cfg.name = Some("Ruda Bold".to_string());
-                cfg
+            config: Some(FontConfig{
+                name: Some("Ruda Bold".to_string()),
+                ..Default::default()
+            }),
+        }
+    ]);
+    imgui.fonts().add_font(&[
+        FontSource::TtfData {
+            data: include_bytes!("../fonts/Apercu Medium.ttf"),
+            size_pixels: 15.0,
+            config: Some(FontConfig{
+                name: Some("Apercu Medium".to_string()),
+                ..Default::default()
+            }),
+        }
+    ]);
+    imgui.fonts().add_font(&[
+        FontSource::TtfData {
+            data: include_bytes!("../fonts/Apercu Bold.ttf"),
+            size_pixels: 15.0,
+            config: Some(FontConfig{
+                name: Some("Apercu Bold".to_string()),
+                ..Default::default()
             }),
         }
     ]);
 
     let style = imgui.style_mut();
-    style.frame_rounding = 4.0;
-    style.grab_rounding = 4.0;
-    style.alpha = 1.0;
+    style.frame_rounding = 2.0;
+    style.window_title_align = [0.5, 0.5];
+    // style.grab_rounding = 4.0;
+    // style.alpha = 1.0;
 }
 
 // https://user-images.githubusercontent.com/1657728/61432156-a1179d00-a983-11e9-87ed-f6711d7610be.png
