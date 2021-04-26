@@ -82,11 +82,10 @@ impl Window {
 
     /// Modifies the HWND to be an overlay
     unsafe fn init_overlay(hwnd: HWND) {
-        println!("init");
         // SetWindowLongA(hwnd, GWL_STYLE, (WS_CLIPSIBLINGS | WS_POPUP | WS_VISIBLE) as _);
         SetWindowLongA(hwnd, GWL_STYLE, (WS_CLIPSIBLINGS | WS_POPUP | WS_VISIBLE) as _);
         // Default Nvidia flags: EX_LAYERED, EX_NOACTIVE, EX_TOOLWINDOW
-        SetWindowLongA(hwnd, GWL_EXSTYLE, (WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW) as _);
+        SetWindowLongA(hwnd, GWL_EXSTYLE, (WS_EX_LAYERED | WS_EX_TOOLWINDOW) as _);
         // SetWindowLongA(hwnd, GWL_EXSTYLE, (WS_EX_ACCEPTFILES | WS_EX_APPWINDOW | WS_EX_TRANSPARENT | WS_EX_WINDOWEDGE) as _);
 
         // Remove border

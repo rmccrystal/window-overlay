@@ -140,7 +140,6 @@ impl WindowState {
 
         drop(this);
         old_flags.apply_diff(window, new_flags);
-        println!("winit");
     }
 
     pub fn set_window_flags_in_place<F>(&mut self, f: F)

@@ -56,7 +56,7 @@ impl Imgui {
         }
     }
 
-    pub fn run(self, mut run_ui: impl FnMut(&mut Ui, &mut WindowController) + 'static) -> ! {
+    pub fn run(self, mut run_ui: impl FnMut(&mut Ui, &mut RenderContext) + 'static) -> ! {
         let Imgui {
             event_loop,
             display,
@@ -65,6 +65,9 @@ impl Imgui {
             mut renderer,
             mut controller
         } = self;
+
+        let mut render_context = RenderContext{ui_open: true, bypass_screenshots: true};
+        let mut render_context_init = false;
 
         let mut last_frame = Instant::now();
 
@@ -86,7 +89,15 @@ impl Imgui {
 
                 let mut ui = imgui.frame();
 
-                run_ui(&mut ui, &mut controller);
+                let old_render_context = render_context.clone();
+                run_ui(&mut ui, &mut render_context);
+                if old_render_context.ui_open != render_context.ui_open || !render_context_init {
+                    controller.clickthrough(!render_context.ui_open);
+                }
+                if old_render_context.bypass_screenshots != render_context.bypass_screenshots || !render_context_init {
+                    controller.hide_screenshots(render_context.bypass_screenshots);
+                }
+                render_context_init = true;
 
                 let gl_window = display.gl_window();
                 let mut target = display.draw();
@@ -110,4 +121,11 @@ impl Imgui {
             }
         })
     }
+}
+
+/// Context that is passed to the callback in the render loop
+#[derive(Default, Clone, Eq, PartialEq)]
+pub struct RenderContext {
+    pub bypass_screenshots: bool,
+    pub ui_open: bool
 }
