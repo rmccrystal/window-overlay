@@ -3,7 +3,7 @@ use imgui_winit_support::{WinitPlatform, HiDpiMode};
 use super::fonts::add_fonts;
 use winit::event_loop::EventLoop;
 use imgui_glium_renderer::Renderer;
-use imgui::{Context, Ui, FontSource, FontConfig};
+use imgui::{Context, Ui, FontSource, FontConfig, FontId};
 use std::time::{Instant, Duration};
 use glutin::event::{Event, WindowEvent};
 use glium::Surface;
@@ -11,6 +11,10 @@ use glutin::event_loop::ControlFlow;
 use crate::window::WindowController;
 use std::marker::PhantomData;
 use std::collections::HashMap;
+use std::cell::RefCell;
+use crate::types::Font;
+use std::ptr::null;
+use std::mem;
 
 pub struct Imgui {
     pub event_loop: EventLoop<()>,
@@ -19,6 +23,7 @@ pub struct Imgui {
     pub platform: WinitPlatform,
     pub renderer: Renderer,
     pub controller: WindowController,
+    pub fonts: HashMap<Font, FontId>
 }
 
 impl Imgui {
@@ -53,6 +58,7 @@ impl Imgui {
             platform,
             renderer,
             controller,
+            fonts
         }
     }
 
@@ -65,10 +71,11 @@ impl Imgui {
             mut platform,
             mut renderer,
             mut controller,
+            fonts,
             ..
         } = self;
 
-        let mut render_context = RenderContext { ui_open: true, bypass_screenshots: true };
+        let mut render_context = RenderContext { ui_open: true, bypass_screenshots: true, fonts };
         let mut render_context_init = false;
         let mut fade_start = None;
         let fade_time = Duration::from_millis(1000);
@@ -135,10 +142,11 @@ impl Imgui {
 }
 
 /// Context that is passed to the callback in the render loop
-#[derive(Default, Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct RenderContext {
     pub bypass_screenshots: bool,
     pub ui_open: bool,
+    pub fonts: HashMap<Font, FontId>
 }
 
 #[derive(Default, Debug)]
@@ -153,11 +161,16 @@ impl RenderState {
         self.0.insert(key.to_string(), Box::new(value));
     }
 
-    pub fn get<T: 'static>(&mut self, key: &str, default: T) -> &mut T {
-        self.0.entry(key.to_string())
-            .or_insert_with(|| Box::new(default))
+    pub fn get<'a, T: 'static>(&mut self, key: &str, default: T) -> &'a mut T {
+        self.get_or_else(key, move || default)
+    }
+
+    pub fn get_or_else<'a, T: 'static>(&mut self, key: &str, default: impl FnOnce() -> T) -> &'a mut T {
+        let n = self.0.entry(key.to_string())
+            .or_insert_with(|| Box::new(default()))
             .downcast_mut::<T>()
-            .unwrap()
+            .unwrap();
+        unsafe { (n as *mut T).as_mut().unwrap() }
     }
 }
 

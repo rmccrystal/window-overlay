@@ -1,4 +1,7 @@
-const DEFAULT_COLOR: u32 = 0xFFFFFFFF;
+use imgui::sys::ImColor;
+use crate::color::Color;
+
+const DEFAULT_COLOR: Color = Color::from_hex(0xFFFFFF);
 
 pub type Point = (f32, f32);
 
@@ -14,7 +17,7 @@ macro_rules! generate_setter {
 
 #[derive(Debug, Clone)]
 pub struct LineOptions {
-    pub color: u32,
+    pub color: Color,
     pub width: f32,
 }
 
@@ -28,13 +31,13 @@ impl Default for LineOptions {
 }
 
 impl LineOptions {
-    generate_setter!(color: impl Into<u32>);
+    generate_setter!(color: impl Into<Color>);
     generate_setter!(width: f32);
 }
 
 #[derive(Debug, Clone)]
 pub struct BoxOptions {
-    pub color: u32,
+    pub color: Color,
     pub rounding: f32,
     pub width: f32,
     pub filled: bool,
@@ -52,7 +55,7 @@ impl Default for BoxOptions {
 }
 
 impl BoxOptions {
-    generate_setter!(color: impl Into<u32>);
+    generate_setter!(color: impl Into<Color>);
     generate_setter!(rounding: f32);
     generate_setter!(width: f32);
     generate_setter!(filled: bool);
@@ -60,13 +63,12 @@ impl BoxOptions {
 
 #[derive(Debug, Clone)]
 pub struct TextOptions {
-    pub color: u32,
+    pub color: Color,
     pub font: Font,
-    pub font_size: Option<f32>, // if this is none, the font size will be default
     pub centered_horizontal: bool,
     pub centered_vertical: bool,
     pub style: TextStyle,
-    pub shadow_color: u32,
+    pub shadow_color: Color,
 }
 
 impl Default for TextOptions {
@@ -74,29 +76,25 @@ impl Default for TextOptions {
         Self {
             color: DEFAULT_COLOR,
             font: Font::Verdana,
-            font_size: None,
             centered_horizontal: false,
             centered_vertical: false,
             style: TextStyle::Shadow,
-            shadow_color: 0xAA000000,
+            shadow_color: Color::from_rgba(20, 20, 20, 150),
         }
     }
 }
 
 impl TextOptions {
-    pub fn color(mut self, color: impl Into<u32>) -> Self {
+    pub fn color(mut self, color: impl Into<Color>) -> Self {
         self.color = color.into();
-        // set the opacity to the same opacity as color
-        let opacity = ((self.color & 0xFF000000) >> 24) as u8;
-        self.shadow_color = (self.shadow_color & 0x00FFFFFF) + ((opacity as u32) << 24);
+        self.shadow_color.a = self.color.a;
         self
     }
     generate_setter!(font: Font);
-    generate_setter!(font_size: Option<f32>);
     generate_setter!(centered_horizontal: bool);
     generate_setter!(centered_vertical: bool);
     generate_setter!(style: TextStyle);
-    generate_setter!(shadow_color: impl Into<u32>);
+    generate_setter!(shadow_color: impl Into<Color>);
 }
 
 #[derive(Debug, Clone)]
@@ -114,9 +112,15 @@ pub enum Font {
     Verdana,
 }
 
+impl Default for Font {
+    fn default() -> Self {
+        Self::Tahoma
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct CircleOptions {
-    pub color: u32,
+    pub color: Color,
     pub filled: bool,
     pub width: f32,
 }
@@ -132,7 +136,6 @@ impl Default for CircleOptions {
 }
 
 impl CircleOptions {
-    generate_setter!(color: impl Into<u32>);
     generate_setter!(filled: bool);
     generate_setter!(width: f32);
 }

@@ -13,6 +13,7 @@ use imgui::Ui;
 use glium::Display;
 use winapi::um::processthreadsapi::GetCurrentProcessId;
 use crate::util::set_remote_affinity;
+use winutil::get_windows;
 
 const HIJACK_WINDOWS: &[(&str, &str)] = &[
     ("CEF-OSC-WIDGET", "NVIDIA GeForce Overlay")
@@ -48,7 +49,7 @@ impl OverlayWindow {
     }
 
     pub fn hijack(class_name: &str, window_name: &str) -> Option<Result<Self>> {
-        super::util::get_windows().into_iter()
+        get_windows().into_iter()
             .find(|window| {
                 window.class == class_name && window.title.as_ref().unwrap() == window_name
             })

@@ -1,21 +1,24 @@
 use std::collections::HashMap;
+use crate::imgui::RenderContext;
+use ::imgui::*;
+use crate::types::*;
 
 /// Represents a frame that be can be drawn on
-pub struct OverlayWindow<'a, 'ui> {
-    pub font_ids: HashMap<super::types::Font, FontId>,
-    pub ui: &'a mut Ui<'ui>,
+pub struct OverlayWindow<'a, 'b, 'ui> {
+    context: &'a RenderContext,
+    ui: &'b Ui<'ui>,
     style_token: StyleStackToken,
     color_token: ColorStackToken,
     window_token: WindowToken,
-    align_to_pixel: bool
+    align_to_pixel: bool,
 }
 
-impl<'a, 'ui> OverlayWindow<'a, 'ui> {
+impl<'a, 'b, 'ui> OverlayWindow<'a, 'b, 'ui> {
     /// Creates a frame from a context
     pub fn begin(
-        ui: &'a mut Ui<'ui>,
-        font_ids: &HashMap<super::types::Font, FontId>,
-        align_to_pixel: bool
+        ui: &'b imgui::Ui<'ui>,
+        context: &'a RenderContext,
+        align_to_pixel: bool,
     ) -> Self {
         let style_token = ui.push_style_vars(&[StyleVar::WindowBorderSize(0.0), StyleVar::WindowPadding([0.0, 0.0])]);
         let color_token = ui.push_style_color(StyleColor::WindowBg, [0.0, 0.0, 0.0, 0.0]);
@@ -24,14 +27,18 @@ impl<'a, 'ui> OverlayWindow<'a, 'ui> {
             .position([0.0, 0.0], Condition::Always)
             .size(ui.io().display_size, Condition::Always)
             .begin(&ui).unwrap();
-        Self {
-            font_ids: font_ids.clone(),
-            style_token,
-            window_token,
-            color_token,
-            ui,
-            align_to_pixel
-        }
+        Self { context, ui, style_token, color_token, window_token, align_to_pixel }
+    }
+
+    pub fn build(
+        ui: &'b imgui::Ui<'ui>,
+        context: &'a RenderContext,
+        align_to_pixel: bool,
+        run: impl FnOnce(&OverlayWindow)
+    ) {
+        let window = Self::begin(ui, context, align_to_pixel);
+        run(&window);
+        window.end();
     }
 
     pub fn end(self) {
@@ -39,34 +46,40 @@ impl<'a, 'ui> OverlayWindow<'a, 'ui> {
         self.style_token.pop(&self.ui);
         self.color_token.pop(&self.ui);
     }
-
-    fn get_draw_list(&self) -> WindowDrawList {
-        self.ui.get_window_draw_list()
-    }
 }
 
-impl Draw for OverlayWindow<'_, '_> {
-    fn draw_line(&mut self, mut p1: Vector2, mut p2: Vector2, options: LineOptions) {
+impl OverlayWindow<'_, '_, '_> {
+    fn get_draw_list(&self) -> DrawListMut {
+        self.ui.get_window_draw_list()
+    }
+
+    pub fn draw_line(&self, mut p1: impl Into<[f32; 2]>, mut p2: impl Into<[f32; 2]>, options: LineOptions) {
+        let mut p1 = p1.into();
+        let mut p2 = p2.into();
         if self.align_to_pixel {
-            p1 = p1.round();
-            p2 = p2.round();
+            p1[0] = p1[0].round();
+            p1[1] = p1[1].round();
+            p2[0] = p2[0].round();
+            p2[1] = p2[1].round();
         }
 
-        let draw_list = self.get_draw_list();
-        draw_list
+        self.get_draw_list()
             .add_line(p1.into(), p2.into(), options.color)
             .thickness(options.width)
             .build()
     }
 
-    fn draw_box(&mut self, mut p1: Vector2, mut p2: Vector2, options: BoxOptions) {
+    pub fn draw_box(&self, mut p1: impl Into<[f32; 2]>, mut p2: impl Into<[f32; 2]>, options: BoxOptions) {
+        let mut p1 = p1.into();
+        let mut p2 = p2.into();
         if self.align_to_pixel {
-            p1 = p1.round();
-            p2 = p2.round();
+            p1[0] = p1[0].round();
+            p1[1] = p1[1].round();
+            p2[0] = p2[0].round();
+            p2[1] = p2[1].round();
         }
 
-        let draw_list = self.get_draw_list();
-        draw_list
+        self.get_draw_list()
             .add_rect(p1.into(), p2.into(), options.color)
             .thickness(options.width)
             .rounding(options.rounding)
@@ -74,27 +87,29 @@ impl Draw for OverlayWindow<'_, '_> {
             .build()
     }
 
-    fn draw_text(&mut self, mut origin: Vector2, text: &str, options: TextOptions) {
+    pub fn draw_text(&self, mut origin: impl Into<[f32; 2]>, text: &str, options: TextOptions) {
+        let mut origin = origin.into();
         if self.align_to_pixel {
-            origin = origin.round()
+            origin[0] = origin[0].round();
+            origin[1] = origin[1].round();
         }
 
-        let draw_list = self.get_draw_list();
         let text = unsafe { ImStr::from_ptr_unchecked(ImString::new(text).as_ptr()) };
 
-        let font = *self.font_ids.get(&options.font).unwrap();
-        let _font_size = options.font_size.unwrap_or(0.0);
+        let font = *self.context.fonts.get(&options.font).unwrap();
 
         let font_token = self.ui.push_font(font);
 
         let x = match options.centered_horizontal {
-            false => origin.x,
-            true => origin.x - (self.ui.calc_text_size(text, false, 0.0)[0] / 2.0),
+            false => origin[0],
+            true => origin[0] - (self.ui.calc_text_size(text, false, 0.0)[0] / 2.0),
         };
         let y = match options.centered_vertical {
-            false => origin.y,
-            true => origin.y - (self.ui.calc_text_size(text, false, 0.0)[0] / 2.0),
+            false => origin[1],
+            true => origin[1] - (self.ui.calc_text_size(text, false, 0.0)[0] / 2.0),
         };
+
+        let draw_list = self.get_draw_list();
 
         let draw = |color, offset: (f32, f32)| {
             draw_list.add_text([x + offset.0, y + offset.1], color, text);
@@ -123,7 +138,7 @@ impl Draw for OverlayWindow<'_, '_> {
         font_token.pop(&self.ui);
     }
 
-    fn draw_circle(&mut self, _origin: Vector2, _radius: f32, _options: CircleOptions) {
+    fn draw_circle(&self, _origin: [f32; 2], _radius: f32, _options: CircleOptions) {
         unimplemented!()
     }
 }
