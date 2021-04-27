@@ -102,9 +102,9 @@ pub fn dark_red(imgui: &mut imgui::Context) {
 
     colors[ImGuiCol_Text as usize] = [0.75, 0.75, 0.75, 1.0];
     colors[ImGuiCol_TextDisabled as usize] = [0.35, 0.35, 0.35, 1.0];
-    colors[ImGuiCol_WindowBg as usize] = [0.00, 0.00, 0.00, 1.0];
-    colors[ImGuiCol_ChildBg as usize] = [0.00, 0.00, 0.00, 1.0];
-    colors[ImGuiCol_PopupBg as usize] = [0.08, 0.08, 0.08, 1.0];
+    colors[ImGuiCol_WindowBg as usize] = [0.08, 0.08, 0.08, 1.0];
+    colors[ImGuiCol_ChildBg as usize] = [0.08, 0.08, 0.08, 1.0];
+    colors[ImGuiCol_PopupBg as usize] = [0.10, 0.10, 0.10, 1.0];
     colors[ImGuiCol_Border as usize] = [0.00, 0.00, 0.00, 1.0];
     colors[ImGuiCol_BorderShadow as usize] = [0.00, 0.00, 0.00, 1.0];
     colors[ImGuiCol_FrameBg as usize] = [0.00, 0.00, 0.00, 1.0];

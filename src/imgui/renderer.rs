@@ -10,18 +10,18 @@ use glium::Surface;
 use glutin::event_loop::ControlFlow;
 use crate::window::WindowController;
 use std::marker::PhantomData;
+use std::collections::HashMap;
 
-pub struct Imgui<T: Default + 'static> {
+pub struct Imgui {
     pub event_loop: EventLoop<()>,
     pub display: glium::Display,
     pub imgui: Context,
     pub platform: WinitPlatform,
     pub renderer: Renderer,
     pub controller: WindowController,
-    state_type: PhantomData<T>,
 }
 
-impl<T: Default + 'static> Imgui<T> {
+impl Imgui {
     pub fn new(window: window::OverlayWindow, mut imgui: imgui::Context) -> Self {
         let window::OverlayWindow { event_loop, controller, display } = window;
 
@@ -42,8 +42,6 @@ impl<T: Default + 'static> Imgui<T> {
 
         let hidpi_factor = platform.hidpi_factor();
 
-        dbg!(hidpi_factor);
-
         // imgui.io_mut().font_global_scale = (hidpi_factor) as f32;
         let fonts = add_fonts(&mut imgui, 1.0);
         let renderer = Renderer::init(&mut imgui, &display).expect("Unable to create imgui renderer");
@@ -55,12 +53,11 @@ impl<T: Default + 'static> Imgui<T> {
             platform,
             renderer,
             controller,
-            state_type: PhantomData,
         }
     }
 
     /// Runs the ui with a state that gets inited with Default
-    pub fn run(self, mut run_ui: impl FnMut(&mut Ui, &mut T, &mut RenderContext) + 'static) -> ! {
+    pub fn run(self, mut run_ui: impl FnMut(&mut Ui, &mut RenderState, &mut RenderContext) + 'static) -> ! {
         let Imgui {
             event_loop,
             display,
@@ -76,7 +73,7 @@ impl<T: Default + 'static> Imgui<T> {
         let mut fade_start = None;
         let fade_time = Duration::from_millis(1000);
 
-        let mut state = T::default();
+        let mut state = RenderState::new();
 
         let mut last_frame = Instant::now();
 
@@ -142,6 +139,26 @@ impl<T: Default + 'static> Imgui<T> {
 pub struct RenderContext {
     pub bypass_screenshots: bool,
     pub ui_open: bool,
+}
+
+#[derive(Default, Debug)]
+pub struct RenderState(HashMap<String, Box<dyn std::any::Any>>);
+
+impl RenderState {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub fn set<T: 'static>(&mut self, key: &str, value: T) {
+        self.0.insert(key.to_string(), Box::new(value));
+    }
+
+    pub fn get<T: 'static>(&mut self, key: &str, default: T) -> &mut T {
+        self.0.entry(key.to_string())
+            .or_insert_with(|| Box::new(default))
+            .downcast_mut::<T>()
+            .unwrap()
+    }
 }
 
 // Animation for fading in a window. Returns a f32 from 0.0 to 1.0 of the alpha the window should be

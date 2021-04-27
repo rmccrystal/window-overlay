@@ -9,7 +9,7 @@ pub mod shellcode;
 use ::imgui::*;
 use crate::imgui::Imgui;
 use crate::util::get_windows;
-use winapi::um::winuser::{GetAsyncKeyState, VK_F1};
+use winapi::um::winuser::{GetAsyncKeyState, VK_F1, VK_LBUTTON};
 use crate::imgui::keybind::keybind_select;
 
 pub fn main() {
@@ -23,8 +23,11 @@ pub fn main() {
     imgui::themes::main_theme(&mut ctx);
     imgui::themes::dark_blue(&mut ctx);
 
-    let imgui: Imgui<()> = Imgui::new(w, ctx);
-    imgui.run(|ui, state, ctx| {
+    let mut aimbot_key = VK_LBUTTON;
+    let mut color = [0.0, 0.0, 0.0];
+
+    let imgui: Imgui = Imgui::new(w, ctx);
+    imgui.run(move |ui, state, ctx| {
         if unsafe { GetAsyncKeyState(VK_F1) < 0} {
             ctx.ui_open = !ctx.ui_open;
         }
@@ -36,13 +39,15 @@ pub fn main() {
             .size([200.0, 300.0], Condition::FirstUseEver)
             .collapsible(false)
             .focus_on_appearing(true)
+            .always_auto_resize(true)
             .build(&ui, || {
             let n = ui.begin_menu_bar();
 
             TabBar::new(im_str!("TabBar")).build(&ui, || {
                 TabItem::new(im_str!("Aimbot")).build(&ui, || {
                     ui.checkbox(im_str!("Enabled"), &mut true);
-                    keybind_select(&ui, im_str!("Aimbot Key"), &mut 1);
+                    ::imgui::ColorEdit::new(im_str!("Test color"), &mut color).build(&ui);
+                    keybind_select(&ui, state, im_str!("Aimbot Key"), &mut aimbot_key);
                 });
                 TabItem::new(im_str!("ESP")).build(&ui, || {
                     ui.checkbox(im_str!("Enabled"), &mut true);
