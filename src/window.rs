@@ -135,7 +135,10 @@ impl WindowController {
                 let width = rect.right - rect.left;
                 let height = rect.bottom - rect.top;
 
-                MoveWindow(self.hwnd, rect.left, rect.top, width, height, 1);
+                // FIXME: For some reason if this is set to any full screen app, it thinks
+                // that its in fullscreen windowed mode and the background turns black. For
+                // now making the window slightly smaller seems to fix the issue
+                MoveWindow(self.hwnd, rect.left + 1, rect.top + 1, width - 1, height - 1, 1);
             }
 
             let target = self.target_hwnd.unwrap_or_else(|| GetForegroundWindow());
