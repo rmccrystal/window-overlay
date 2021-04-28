@@ -6,7 +6,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-winit = "*"
+winit = { path = "custom-winit" }
 anyhow = "1.0.40"
 winapi = { version = "*", features = ["winuser", "uxtheme", "processthreadsapi", "memoryapi"] }
 imgui = "0.7.0"
@@ -17,6 +17,7 @@ imgui-glium-renderer = "0.7.0"
 log = "0.4.14"
 clipboard = "0.5.0"
 winutil = { path = "../winutil" }
+serde = { version = "1.0.125", features = ["derive"] }
 
 [patch.crates-io]
 winit = { path = "custom-winit" }

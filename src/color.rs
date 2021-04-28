@@ -1,4 +1,5 @@
 use imgui::ImColor32;
+use serde::{Serialize, Deserialize};
 
 /// Wraps u32 that represents a packed RGBA color. Mostly used by types in the
 /// low level custom drawing API, such as [`DrawListMut`](crate::DrawListMut).
@@ -27,7 +28,7 @@ use imgui::ImColor32;
 /// c.b = 0xbb;
 /// assert_eq!(c.to_bits(), 0xff_bb_c0_80);
 /// ```
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 #[repr(transparent)]
 pub struct Color(pub u32);
 
@@ -121,6 +122,11 @@ impl Color {
         }
         hex = hex.swap_bytes();
         Self(hex)
+    }
+
+    pub fn opacity(mut self, opacity: u8) -> Self {
+        self.a = opacity;
+        self
     }
 
     /// Construct a fully opaque color from 4 `f32` channel values in the range

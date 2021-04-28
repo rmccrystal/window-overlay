@@ -4,7 +4,7 @@ use ::imgui::*;
 use crate::types::*;
 
 /// Represents a frame that be can be drawn on
-pub struct OverlayWindow<'a, 'b, 'ui> {
+pub struct ImguiOverlay<'a, 'b, 'ui> {
     context: &'a RenderContext,
     ui: &'b Ui<'ui>,
     style_token: StyleStackToken,
@@ -13,7 +13,7 @@ pub struct OverlayWindow<'a, 'b, 'ui> {
     align_to_pixel: bool,
 }
 
-impl<'a, 'b, 'ui> OverlayWindow<'a, 'b, 'ui> {
+impl<'a, 'b, 'ui> ImguiOverlay<'a, 'b, 'ui> {
     /// Creates a frame from a context
     pub fn begin(
         ui: &'b imgui::Ui<'ui>,
@@ -34,7 +34,7 @@ impl<'a, 'b, 'ui> OverlayWindow<'a, 'b, 'ui> {
         ui: &'b imgui::Ui<'ui>,
         context: &'a RenderContext,
         align_to_pixel: bool,
-        run: impl FnOnce(&OverlayWindow)
+        run: impl FnOnce(&ImguiOverlay)
     ) {
         let window = Self::begin(ui, context, align_to_pixel);
         run(&window);
@@ -48,7 +48,7 @@ impl<'a, 'b, 'ui> OverlayWindow<'a, 'b, 'ui> {
     }
 }
 
-impl OverlayWindow<'_, '_, '_> {
+impl ImguiOverlay<'_, '_, '_> {
     fn get_draw_list(&self) -> DrawListMut {
         self.ui.get_window_draw_list()
     }

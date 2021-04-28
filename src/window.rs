@@ -25,6 +25,8 @@ pub struct OverlayWindow {
     pub controller: WindowController,
 }
 
+unsafe impl Send for OverlayWindow {}
+
 impl OverlayWindow {
     /// Hijacks a Window or creates one if there are no windows available to hijack
     pub fn new() -> Result<Self> {
@@ -86,7 +88,7 @@ impl OverlayWindow {
         // SetWindowLongA(hwnd, GWL_STYLE, (WS_CLIPSIBLINGS | WS_POPUP | WS_VISIBLE) as _);
         SetWindowLongA(hwnd, GWL_STYLE, (WS_CLIPSIBLINGS | WS_POPUP | WS_VISIBLE) as _);
         // Default Nvidia flags: EX_LAYERED, EX_NOACTIVE, EX_TOOLWINDOW
-        SetWindowLongA(hwnd, GWL_EXSTYLE, (WS_EX_LAYERED | WS_EX_TOOLWINDOW) as _);
+        SetWindowLongA(hwnd, GWL_EXSTYLE, (WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOOLWINDOW) as _);
         // SetWindowLongA(hwnd, GWL_EXSTYLE, (WS_EX_ACCEPTFILES | WS_EX_APPWINDOW | WS_EX_TRANSPARENT | WS_EX_WINDOWEDGE) as _);
 
         // Remove border
@@ -123,17 +125,17 @@ impl WindowController {
         unsafe {
             // Update overlay location to be on top of target
             if let Some(target) = self.target_hwnd {
-                    let mut rect = std::mem::zeroed();
-                    GetWindowRect(target, &mut rect);
+                let mut rect = std::mem::zeroed();
+                GetWindowRect(target, &mut rect);
 
-                    if rect.bottom == 0 && rect.top == 0 {
-                        panic!("Error updating target window: could not get the window rect");
-                    }
+                if rect.bottom == 0 && rect.top == 0 {
+                    panic!("Error updating target window: could not get the window rect");
+                }
 
-                    let width = rect.right - rect.left;
-                    let height = rect.bottom - rect.top;
+                let width = rect.right - rect.left;
+                let height = rect.bottom - rect.top;
 
-                    MoveWindow(self.hwnd, rect.left, rect.top, width, height, 1);
+                MoveWindow(self.hwnd, rect.left, rect.top, width, height, 1);
             }
 
             let target = self.target_hwnd.unwrap_or_else(|| GetForegroundWindow());
@@ -142,10 +144,14 @@ impl WindowController {
                 SetWindowPos(
                     self.hwnd,
                     target,
-                    0,0,0,0,
-                    SWP_ASYNCWINDOWPOS | SWP_NOMOVE | SWP_NOSIZE
+                    0, 0, 0, 0,
+                    SWP_ASYNCWINDOWPOS | SWP_NOMOVE | SWP_NOSIZE,
                 );
                 UpdateWindow(self.hwnd);
+            }
+
+            if !self.last_clickthrough && GetForegroundWindow() == target {
+                SetForegroundWindow(self.hwnd);
             }
         }
     }
@@ -162,9 +168,11 @@ impl WindowController {
             unsafe {
                 self.set_style_flag(GWL_EXSTYLE, WS_EX_TRANSPARENT, clickthrough);
 
+                /*
                 match clickthrough {
                     false => {
                         self.last_foreground_window = Some(GetForegroundWindow());
+                        println!("setforeground");
                         SetForegroundWindow(self.hwnd);
                     }
                     true => {
@@ -173,7 +181,7 @@ impl WindowController {
                             self.last_foreground_window = None;
                         }
                     }
-                }
+                }*/
             };
         }
     }
